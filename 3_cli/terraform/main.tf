@@ -1,4 +1,4 @@
-resource "aws_lambda_function" "send_message_to_cpo" {
+resource "aws_lambda_function" "ts_deploy_test" {
   filename      = data.archive_file.lambda_zip.output_path # ローカルに作成された.zipファイルを指定
   function_name = "ts-cli-deploy-test"
   role          = aws_iam_role.lambda_execution.arn
@@ -12,6 +12,18 @@ resource "aws_lambda_function" "send_message_to_cpo" {
       filename,
       environment
     ]
+  }
+}
+
+# terraform 上で Zip ファイルとして lambda コードを作成
+# ソースコード管理用リポジトリにてコード管理しているので、ここでは Zip ファイルを作成するだけ
+data "archive_file" "lambda_zip" {
+  type        = "zip"
+  output_path = "${path.module}/ts-cli-deploy-test.zip" # ローカルのカレントディレクトリに.zipファイルが作成される
+
+  source {
+    content  = "not_use_here"
+    filename = "index.js"
   }
 }
 
@@ -37,16 +49,3 @@ resource "aws_iam_role_policy_attachment" "lambda_basic" {
   role       = aws_iam_role.lambda_execution.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
-
-# terraform 上で Zip ファイルとして lambda コードを作成
-# ソースコード管理用リポジトリにてコード管理しているので、ここでは Zip ファイルを作成するだけ
-data "archive_file" "lambda_zip" {
-  type        = "zip"
-  output_path = "${path.module}/ts-cli-deploy-test.zip" # ローカルのカレントディレクトリに.zipファイルが作成される
-
-  source {
-    content  = "not_use_here"
-    filename = "index.js"
-  }
-}
-
