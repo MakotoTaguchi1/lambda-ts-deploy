@@ -45,7 +45,12 @@ jobs:
         working-directory: ${{ env.LAMBDA_PATH }}
         run: npm ci
 
-      - name: Build and bundle TypeScript
+      # esbuild は型チェックしないので、デプロイ前に型チェックを行う
+      - name: Type check TypeScript
+        working-directory: ${{ env.LAMBDA_PATH }}
+        run: npm run build
+
+      - name: Build and bundle TypeScript with esbuild
         working-directory: ${{ env.LAMBDA_PATH }}
         run: npm run bundle:config
 

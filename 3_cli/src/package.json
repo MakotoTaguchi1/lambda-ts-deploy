@@ -4,7 +4,7 @@
   "description": "TypeScript Lambda function with axios",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --noEmit",
     "bundle:config": "node esbuild.config.js"
   },
   "dependencies": {

@@ -22,7 +22,7 @@ data "archive_file" "lambda_zip" {
   output_path = "${path.module}/ts-cli-deploy-test.zip" # ローカルのカレントディレクトリに.zipファイルが作成される
 
   source {
-    content  = "not_use_here"
+    content  = "not_use_here" # 本来ソースコードはここに書くが、terraform管理しないので書かない。初回 apply 時のみ適用される。
     filename = "index.js"
   }
 }
