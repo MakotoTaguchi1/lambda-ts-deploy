@@ -1,0 +1,18 @@
+{
+  "name": "lambda-ts-deploy",
+  "version": "1.0.0",
+  "description": "TypeScript Lambda function with axios",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "bundle:config": "node esbuild.config.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.7",
+    "esbuild": "^0.19.0",
+    "typescript": "^5.0.0"
+  }
+}

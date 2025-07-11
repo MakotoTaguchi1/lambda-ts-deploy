@@ -1,0 +1,90 @@
+name: Deploy Lambda for ts-cli-deploy
+
+on:
+  push:
+    branches:
+      - "main"
+    paths:
+      - "3_cli/src/**"
+      - ".github/workflows/deploy-ts-cli-lambda.yaml"
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: "22.15.0"
+  AWS_REGION: ap-northeast-1
+  LAMBDA_FUNCTION_NAME: ts-cli-deploy-test
+  LAMBDA_PATH: 3_cli/src
+
+jobs:
+  deploy:
+    name: Deploy to Lambda
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_LAMBDA_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: ${{ env.LAMBDA_PATH }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ env.LAMBDA_PATH }}
+        run: npm ci
+
+      - name: Build and bundle TypeScript
+        working-directory: ${{ env.LAMBDA_PATH }}
+        run: npm run bundle:config
+
+      - name: Prepare deployment package
+        working-directory: ${{ env.LAMBDA_PATH }}
+        run: |
+          cd dist
+          # distディレクトリをzip化（依存関係は前ステップでバンドル済み）
+          zip -r ../lambda-deployment.zip .
+
+      - name: Deploy to Lambda
+        working-directory: ${{ env.LAMBDA_PATH }}
+        run: |
+          aws lambda update-function-code \
+            --function-name $LAMBDA_FUNCTION_NAME \
+            --zip-file fileb://lambda-deployment.zip \
+            --region $AWS_REGION
+
+      # デプロイが完了するまで待ってから環境変数セットする
+      - name: Wait for Lambda update to complete
+        run: |
+          echo "Waiting for Lambda function update to complete..."
+          aws lambda wait function-updated \
+            --function-name $LAMBDA_FUNCTION_NAME \
+            --region $AWS_REGION
+          echo "Lambda function update completed!"
+
+      - name: Update Lambda environment variables
+        run: |
+          aws lambda update-function-configuration \
+            --function-name $LAMBDA_FUNCTION_NAME \
+            --environment Variables={URL_TO_GET=${{ vars.SITE_URL_TO_GET }}} \
+            --region $AWS_REGION
+
+      - name: Deployment result
+        run: |
+          echo "Deployment completed!"
+          echo "Function: ${{ env.LAMBDA_FUNCTION_NAME }}"
+          echo "Region: ${{ env.AWS_REGION }}"
+          echo "Commit SHA: ${{ github.sha }}"
+    outputs:
+      commit-sha: ${{ github.sha }}
